@@ -229,7 +229,9 @@
                });
             });
 
-
+            /* To create both the marker image for our map, 
+            and it's also going to create them in a cluster if they're close 
+            together using that clusterer library that we already loaded */
             let markerCluster = new MarkerClusterer(map, markers,
             {imagePath: 'https://developers.google.com/maps/documentation/javascript/examples/markerclusterer/m'});
         }
