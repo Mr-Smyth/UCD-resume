@@ -15,6 +15,31 @@ function userInformationHTML(user) { /* Taking in the returned data */
         </div>`;
 }
 
+function repoInformationHTML(repos) { // function to output the public repos of selected user
+    if (repos.length == 0) {
+        return `<div class="clearfix repo-list">No Repos !</div>`;
+    }
+
+    let listItemsHTML = repos.map(function(repo) { // iterate through the repos array and return <li> format below
+        return `
+            <li>
+                <a href="${repo.html_url}" target="_blank">${repo.name}</a>
+            </li>`;
+    });
+
+    return `
+        <div class="clearfix repo-list">
+            <p>
+                <strong>Repo List:</strong>
+            </p>
+            <ul>
+                ${listItemsHTML.join("\n")}
+            </ul>
+        </div>`; // use the join() method on that array and join everything with a new line. Means we dont have to iterate through the array
+
+
+}
+
 
 function fetchGitHubInformation(event) {
     let username = $("#gh-username").val();
@@ -30,19 +55,25 @@ function fetchGitHubInformation(event) {
 
 
     $.when(
-        $.getJSON(`https://api.github.com/users/${username}`)
+        $.getJSON(`https://api.github.com/users/${username}`),
+        $.getJSON(`https://api.github.com/users/${username}/repos`)
     ).then(
-       function(response) {
-           let userData = response;
-           $("#gh-user-data").html(userInformationHTML(userData)) // set html to the results of the userInformationHTML function, with userData sent as the argument
+        function (firstResponse, secondResponse) { /* when we do two calls like this, the when() method packs a response up into arrays.
+                                                        And each one is the first element of the array.
+                                                    So we just need to put the indexes in there for these responses. */
+            let userData = firstResponse[0];
+            let repoData = secondResponse[0];
 
-       }, function(errorResponse) {
-           if (errorResponse === 404) {
-               $("#gh-user-data").html(`<h2>No info found for user ${username}</h2>`);
-           } else {
-               console.log(errorResponse);
-               $("#gh-user-data").html(`<h2>Error: ${errorResponse.responseJSON.message}</h2>`)
-           }
-       });
+            $("#gh-user-data").html(userInformationHTML(userData)); // set html to the results of the userInformationHTML function, with userData sent as the argument
+            $("#gh-repo-data").html(repoInformationHTML(repoData));
+
+        }, function (errorResponse) {
+            if (errorResponse === 404) {
+                $("#gh-user-data").html(`<h2>No info found for user ${username}</h2>`);
+            } else {
+                console.log(errorResponse);
+                $("#gh-user-data").html(`<h2>Error: ${errorResponse.responseJSON.message}</h2>`)
+            }
+        });
 
 }
