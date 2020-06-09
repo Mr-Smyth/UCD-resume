@@ -20,7 +20,7 @@ function repoInformationHTML(repos) { // function to output the public repos of 
         return `<div class="clearfix repo-list">No Repos !</div>`;
     }
 
-    let listItemsHTML = repos.map(function(repo) { // iterate through the repos array and return <li> format below
+    let listItemsHTML = repos.map(function (repo) { // iterate through the repos array and return <li> format below
         return `
             <li>
                 <a href="${repo.html_url}" target="_blank">${repo.name}</a>
@@ -41,7 +41,12 @@ function repoInformationHTML(repos) { // function to output the public repos of 
 }
 
 
-function fetchGitHubInformation(event) {
+function fetchGitHubInformation(event) {  // Main function to get github API data
+
+    // to deal with old user data being left on screen, this clears it off
+    $("#gh-user-data").html("");
+    $("#gh-repo-data").html("");
+
     let username = $("#gh-username").val();
     if (!username) {
         $("#gh-user-data").html(`<h2>Please enter a valid GitHub username</h2>`);
@@ -53,10 +58,10 @@ function fetchGitHubInformation(event) {
             <img src="assets/css/loader.gif" alt="loading . . ." />
         </div>`);
 
-
+    // Get data 
     $.when(
-        $.getJSON(`https://api.github.com/users/${username}`),
-        $.getJSON(`https://api.github.com/users/${username}/repos`)
+        $.getJSON(`https://cors-anywhere.herokuapp.com/api.github.com/users/${username}`),
+        $.getJSON(`https://cors-anywhere.herokuapp.com/api.github.com/users/${username}/repos`)
     ).then(
         function (firstResponse, secondResponse) { /* when we do two calls like this, the when() method packs a response up into arrays.
                                                         And each one is the first element of the array.
@@ -70,6 +75,9 @@ function fetchGitHubInformation(event) {
         }, function (errorResponse) {
             if (errorResponse === 404) {
                 $("#gh-user-data").html(`<h2>No info found for user ${username}</h2>`);
+            } else if (errorResponse.status === 403) { // to handle throttling on github
+                let resetTime = new Date(errorResponse.getResponseHeader('X-RateLimit-Reset')*1000); /* unix timestamp is stored within this header(x-rateLimit-reset) we multiply unix time stamp by 1000 to convert to miliseconds for js to handle */
+                $("#gh-user-data").html(`<h4>Too many requests, please wait until ${resetTime.toLocaleTimeString()}</h4>`); /* toLocaleDateString picks up your location from your browser and prints the local calculated time that the service can be used again. */
             } else {
                 console.log(errorResponse);
                 $("#gh-user-data").html(`<h2>Error: ${errorResponse.responseJSON.message}</h2>`)
